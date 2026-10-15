@@ -5,9 +5,9 @@ from tkinter import ttk
 from pathlib import Path
 
 try:
-	import winsound
+    import winsound
 except ImportError:
-	winsound = None
+    winsound = None
 
 
 WIDTH = 480
@@ -18,608 +18,615 @@ BIRD_X = 120
 BIRD_RADIUS = 15
 PIPE_WIDTH = 72
 PIPE_SPACING = 230
-SETTINGS_FILE = Path(__file__).with_name("flappy_ayarlar.json")
-RECORD_FILE = Path(__file__).with_name("flappy_rekor.json")
+
+# --- DÜZENLENEN KISIM: Diğer bilgisayarlarda dosya izni hatası almamak için verileri kullanıcı dizinine kaydetme ---
+GAME_DIR = Path.home() / ".flappy_bird_data"
+GAME_DIR.mkdir(parents=True, exist_ok=True)
+
+SETTINGS_FILE = GAME_DIR / "flappy_ayarlar.json"
+RECORD_FILE = GAME_DIR / "flappy_rekor.json"
+# --------------------------------------------------------------------------------------------------------------------
 
 THEMES = {
-	"Gün": {
-		"sky": "#8bd5e8",
-		"horizon": "#b7e7d5",
-		"ground": "#d8bd72",
-		"ground_line": "#f2db8d",
-		"pipe": "#48a86a",
-		"pipe_dark": "#28784c",
-		"bird": "#ffd166",
-		"bird_wing": "#f29f58",
-		"sun": "#fff0a6",
-		"decoration": "#f4fff2",
-		"text": "#183b4a",
-	},
-	"Alacakaranlık": {
-		"sky": "#d98b83",
-		"horizon": "#f0b98b",
-		"ground": "#705451",
-		"ground_line": "#c18b62",
-		"pipe": "#568d72",
-		"pipe_dark": "#365f57",
-		"bird": "#ffe08a",
-		"bird_wing": "#ec8b67",
-		"sun": "#ffe0a0",
-		"decoration": "#fff0d8",
-		"text": "#372c3c",
-	},
-	"Gece": {
-		"sky": "#263954",
-		"horizon": "#394c62",
-		"ground": "#51585a",
-		"ground_line": "#87918a",
-		"pipe": "#48a99a",
-		"pipe_dark": "#26716e",
-		"bird": "#ffd166",
-		"bird_wing": "#f09b66",
-		"sun": "#f4edc5",
-		"decoration": "#f6f1d0",
-		"text": "#f6f2e8",
-	},
+    "Gün": {
+        "sky": "#8bd5e8",
+        "horizon": "#b7e7d5",
+        "ground": "#d8bd72",
+        "ground_line": "#f2db8d",
+        "pipe": "#48a86a",
+        "pipe_dark": "#28784c",
+        "bird": "#ffd166",
+        "bird_wing": "#f29f58",
+        "sun": "#fff0a6",
+        "decoration": "#f4fff2",
+        "text": "#183b4a",
+    },
+    "Alacakaranlık": {
+        "sky": "#d98b83",
+        "horizon": "#f0b98b",
+        "ground": "#705451",
+        "ground_line": "#c18b62",
+        "pipe": "#568d72",
+        "pipe_dark": "#365f57",
+        "bird": "#ffe08a",
+        "bird_wing": "#ec8b67",
+        "sun": "#ffe0a0",
+        "decoration": "#fff0d8",
+        "text": "#372c3c",
+    },
+    "Gece": {
+        "sky": "#263954",
+        "horizon": "#394c62",
+        "ground": "#51585a",
+        "ground_line": "#87918a",
+        "pipe": "#48a99a",
+        "pipe_dark": "#26716e",
+        "bird": "#ffd166",
+        "bird_wing": "#f09b66",
+        "sun": "#f4edc5",
+        "decoration": "#f6f1d0",
+        "text": "#f6f2e8",
+    },
 }
 
 DIFFICULTIES = {
-	"Kolay": {"gravity": 0.34, "flap": -7.2, "pipe_speed": 2.8, "gap": 190},
-	"Normal": {"gravity": 0.38, "flap": -7.2, "pipe_speed": 3.2, "gap": 168},
-	"Zor": {"gravity": 0.43, "flap": -7.2, "pipe_speed": 3.7, "gap": 148},
+    "Kolay": {"gravity": 0.34, "flap": -7.2, "pipe_speed": 2.8, "gap": 190},
+    "Normal": {"gravity": 0.38, "flap": -7.2, "pipe_speed": 3.2, "gap": 168},
+    "Zor": {"gravity": 0.43, "flap": -7.2, "pipe_speed": 3.7, "gap": 148},
 }
 
 
 class FlappyBird:
-	def __init__(self, root):
-		self.root = root
-		self.root.title("Flappy Bird")
-		self.root.resizable(False, False)
-		self.fullscreen = False
-		self.windowed_geometry = None
-		self.windowed_resizable = (False, False)
-		self.render_scale = 1
-		self.render_offset_x = 0
-		self.render_offset_y = 0
-		self.theme_name = "Gün"
-		self.show_sky_details = True
-		self.sound_enabled = True
-		self.difficulty = "Normal"
-		self.load_settings()
-		self.theme = THEMES[self.theme_name]
-		self.rules = DIFFICULTIES[self.difficulty]
-		self.state = "menu"
-		self.after_id = None
-		self.score = 0
-		self.best_score = self.load_best_score()
-		self.bird_y = HEIGHT * 0.42
-		self.velocity = 0
-		self.pipes = []
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Flappy Bird")
+        self.root.resizable(False, False)
+        self.fullscreen = False
+        self.windowed_geometry = None
+        self.windowed_resizable = (False, False)
+        self.render_scale = 1
+        self.render_offset_x = 0
+        self.render_offset_y = 0
+        self.theme_name = "Gün"
+        self.show_sky_details = True
+        self.sound_enabled = True
+        self.difficulty = "Normal"
+        self.load_settings()
+        self.theme = THEMES[self.theme_name]
+        self.rules = DIFFICULTIES[self.difficulty]
+        self.state = "menu"
+        self.after_id = None
+        self.score = 0
+        self.best_score = self.load_best_score()
+        self.bird_y = HEIGHT * 0.42
+        self.velocity = 0
+        self.pipes = []
 
-		self.menu = tk.Frame(root, bg="#172a36", padx=42, pady=38)
-		tk.Label(
-			self.menu,
-			text="FLAPPY  /  01",
-			fg="#ffd166",
-			bg="#172a36",
-			font=("Arial", 10, "bold"),
-		).pack(pady=(4, 10))
-		tk.Label(
-			self.menu,
-			text="Flappy Bird",
-			fg="#f3f5e9",
-			bg="#172a36",
-			font=("Arial", 30, "bold"),
-		).pack(pady=(0, 8))
-		tk.Label(
-			self.menu,
-			text="Uç, boruların arasından geç.",
-			fg="#b7c9c8",
-			bg="#172a36",
-			font=("Arial", 11),
-		).pack(pady=(0, 24))
-		self.record_label = tk.Label(
-			self.menu,
-			text=f"REKOR  {self.best_score}",
-			fg="#ffd166",
-			bg="#172a36",
-			font=("Arial", 12, "bold"),
-		)
-		self.record_label.pack(pady=(0, 14))
-		self.make_button(self.menu, "OYNA", self.show_game, primary=True).pack(pady=7)
-		self.make_button(self.menu, "AYARLAR", self.open_settings).pack(pady=5)
-		self.make_button(self.menu, "TAM EKRAN", self.toggle_fullscreen).pack(pady=5)
-		self.make_button(self.menu, "OYUNU KAPAT", root.destroy).pack(pady=(5, 0))
+        self.menu = tk.Frame(root, bg="#172a36", padx=42, pady=38)
+        tk.Label(
+            self.menu,
+            text="FLAPPY  /  01",
+            fg="#ffd166",
+            bg="#172a36",
+            font=("Arial", 10, "bold"),
+        ).pack(pady=(4, 10))
+        tk.Label(
+            self.menu,
+            text="Flappy Bird",
+            fg="#f3f5e9",
+            bg="#172a36",
+            font=("Arial", 30, "bold"),
+        ).pack(pady=(0, 8))
+        tk.Label(
+            self.menu,
+            text="Uç, boruların arasından geç.",
+            fg="#b7c9c8",
+            bg="#172a36",
+            font=("Arial", 11),
+        ).pack(pady=(0, 24))
+        self.record_label = tk.Label(
+            self.menu,
+            text=f"REKOR  {self.best_score}",
+            fg="#ffd166",
+            bg="#172a36",
+            font=("Arial", 12, "bold"),
+        )
+        self.record_label.pack(pady=(0, 14))
+        self.make_button(self.menu, "OYNA", self.show_game, primary=True).pack(pady=7)
+        self.make_button(self.menu, "AYARLAR", self.open_settings).pack(pady=5)
+        self.make_button(self.menu, "TAM EKRAN", self.toggle_fullscreen).pack(pady=5)
+        self.make_button(self.menu, "OYUNU KAPAT", root.destroy).pack(pady=(5, 0))
 
-		self.settings = tk.Frame(root, bg="#172a36", padx=30, pady=24)
-		tk.Label(
-			self.settings,
-			text="AYARLAR",
-			fg="#f3f5e9",
-			bg="#172a36",
-			font=("Arial", 22, "bold"),
-		).pack(pady=(4, 18))
-		style = ttk.Style(root)
-		if "clam" in style.theme_names():
-			style.theme_use("clam")
-		style.configure("Game.TNotebook", background="#172a36", borderwidth=0)
-		style.configure(
-			"Game.TNotebook.Tab",
-			background="#263d48",
-			foreground="#eaf0e6",
-			padding=(18, 9),
-			font=("Arial", 10, "bold"),
-		)
-		style.map(
-			"Game.TNotebook.Tab",
-			background=[("selected", "#ffd166")],
-			foreground=[("selected", "#172a36")],
-		)
-		self.settings_notebook = ttk.Notebook(self.settings, style="Game.TNotebook")
-		self.settings_notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 16))
-		self.appearance_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
-		self.sound_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
-		self.gameplay_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
-		self.settings_notebook.add(self.appearance_tab, text="Görünüm")
-		self.settings_notebook.add(self.sound_tab, text="Ses")
-		self.settings_notebook.add(self.gameplay_tab, text="Oynanış")
-		tk.Label(
-			self.appearance_tab,
-			text="RENK TEMASI",
-			fg="#b7c9c8",
-			bg="#172a36",
-			font=("Arial", 9, "bold"),
-		).pack(pady=(0, 9))
-		self.theme_var = tk.StringVar(value=self.theme_name)
-		theme_row = tk.Frame(self.appearance_tab, bg="#172a36")
-		theme_row.pack(pady=(0, 22))
-		for name, colors in THEMES.items():
-			tk.Radiobutton(
-				theme_row,
-				text=name,
-				value=name,
-				variable=self.theme_var,
-				command=self.change_theme,
-				indicatoron=False,
-				width=12,
-				padx=4,
-				pady=8,
-				bg=colors["sky"],
-				fg=colors["text"],
-				selectcolor=colors["horizon"],
-				activebackground=colors["horizon"],
-				activeforeground=colors["text"],
-				relief=tk.FLAT,
-				cursor="hand2",
-			).pack(side=tk.LEFT, padx=4)
-		self.details_var = tk.BooleanVar(value=self.show_sky_details)
-		tk.Checkbutton(
-			self.appearance_tab,
-			text="Gökyüzü detaylarını göster",
-			variable=self.details_var,
-			command=self.toggle_sky_details,
-			bg="#172a36",
-			fg="#f3f5e9",
-			activebackground="#172a36",
-			activeforeground="#f3f5e9",
-			selectcolor="#29434d",
-			font=("Arial", 11),
-		).pack(pady=(12, 0))
-		tk.Label(
-			self.sound_tab,
-			text="SES EFEKTLERİ",
-			fg="#b7c9c8",
-			bg="#172a36",
-			font=("Arial", 9, "bold"),
-		).pack(pady=(0, 10))
-		self.sound_var = tk.BooleanVar(value=self.sound_enabled)
-		tk.Checkbutton(
-			self.sound_tab,
-			text="Ses efektlerini aç",
-			variable=self.sound_var,
-			command=self.toggle_sound,
-			bg="#172a36",
-			fg="#f3f5e9",
-			activebackground="#172a36",
-			activeforeground="#f3f5e9",
-			selectcolor="#29434d",
-			font=("Arial", 11),
-		).pack(pady=(0, 16))
-		self.make_button(
-			self.sound_tab,
-			"SESİ DENE",
-			lambda: self.play_sound(880, 90),
-		).pack()
-		tk.Label(
-			self.gameplay_tab,
-			text="ZORLUK",
-			fg="#b7c9c8",
-			bg="#172a36",
-			font=("Arial", 9, "bold"),
-		).pack(pady=(0, 10))
-		self.difficulty_var = tk.StringVar(value=self.difficulty)
-		difficulty_row = tk.Frame(self.gameplay_tab, bg="#172a36")
-		difficulty_row.pack()
-		for difficulty in DIFFICULTIES:
-			tk.Radiobutton(
-				difficulty_row,
-				text=difficulty,
-				value=difficulty,
-				variable=self.difficulty_var,
-				command=self.change_difficulty,
-				indicatoron=False,
-				width=9,
-				padx=6,
-				pady=9,
-				bg="#263d48",
-				fg="#eaf0e6",
-				selectcolor="#ffd166",
-				activebackground="#36535d",
-				activeforeground="#ffffff",
-				font=("Arial", 10, "bold"),
-			).pack(side=tk.LEFT, padx=4)
-		self.difficulty_description = tk.Label(
-			self.gameplay_tab,
-			text="",
-			fg="#b7c9c8",
-			bg="#172a36",
-			font=("Arial", 10),
-		)
-		self.difficulty_description.pack(pady=(16, 0))
-		self.update_difficulty_description()
-		self.make_button(self.settings, "GERİ DÖN", self.close_settings, primary=True).pack()
+        self.settings = tk.Frame(root, bg="#172a36", padx=30, pady=24)
+        tk.Label(
+            self.settings,
+            text="AYARLAR",
+            fg="#f3f5e9",
+            bg="#172a36",
+            font=("Arial", 22, "bold"),
+        ).pack(pady=(4, 18))
+        style = ttk.Style(root)
+        if "clam" in style.theme_names():
+            style.theme_use("clam")
+        style.configure("Game.TNotebook", background="#172a36", borderwidth=0)
+        style.configure(
+            "Game.TNotebook.Tab",
+            background="#263d48",
+            foreground="#eaf0e6",
+            padding=(18, 9),
+            font=("Arial", 10, "bold"),
+        )
+        style.map(
+            "Game.TNotebook.Tab",
+            background=[("selected", "#ffd166")],
+            foreground=[("selected", "#172a36")],
+        )
+        self.settings_notebook = ttk.Notebook(self.settings, style="Game.TNotebook")
+        self.settings_notebook.pack(fill=tk.BOTH, expand=True, pady=(0, 16))
+        self.appearance_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
+        self.sound_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
+        self.gameplay_tab = tk.Frame(self.settings_notebook, bg="#172a36", padx=18, pady=20)
+        self.settings_notebook.add(self.appearance_tab, text="Görünüm")
+        self.settings_notebook.add(self.sound_tab, text="Ses")
+        self.settings_notebook.add(self.gameplay_tab, text="Oynanış")
+        tk.Label(
+            self.appearance_tab,
+            text="RENK TEMASI",
+            fg="#b7c9c8",
+            bg="#172a36",
+            font=("Arial", 9, "bold"),
+        ).pack(pady=(0, 9))
+        self.theme_var = tk.StringVar(value=self.theme_name)
+        theme_row = tk.Frame(self.appearance_tab, bg="#172a36")
+        theme_row.pack(pady=(0, 22))
+        for name, colors in THEMES.items():
+            tk.Radiobutton(
+                theme_row,
+                text=name,
+                value=name,
+                variable=self.theme_var,
+                command=self.change_theme,
+                indicatoron=False,
+                width=12,
+                padx=4,
+                pady=8,
+                bg=colors["sky"],
+                fg=colors["text"],
+                selectcolor=colors["horizon"],
+                activebackground=colors["horizon"],
+                activeforeground=colors["text"],
+                relief=tk.FLAT,
+                cursor="hand2",
+            ).pack(side=tk.LEFT, padx=4)
+        self.details_var = tk.BooleanVar(value=self.show_sky_details)
+        tk.Checkbutton(
+            self.appearance_tab,
+            text="Gökyüzü detaylarını göster",
+            variable=self.details_var,
+            command=self.toggle_sky_details,
+            bg="#172a36",
+            fg="#f3f5e9",
+            activebackground="#172a36",
+            activeforeground="#f3f5e9",
+            selectcolor="#29434d",
+            font=("Arial", 11),
+        ).pack(pady=(12, 0))
+        tk.Label(
+            self.sound_tab,
+            text="SES EFEKTLERİ",
+            fg="#b7c9c8",
+            bg="#172a36",
+            font=("Arial", 9, "bold"),
+        ).pack(pady=(0, 10))
+        self.sound_var = tk.BooleanVar(value=self.sound_enabled)
+        tk.Checkbutton(
+            self.sound_tab,
+            text="Ses efektlerini aç",
+            variable=self.sound_var,
+            command=self.toggle_sound,
+            bg="#172a36",
+            fg="#f3f5e9",
+            activebackground="#172a36",
+            activeforeground="#f3f5e9",
+            selectcolor="#29434d",
+            font=("Arial", 11),
+        ).pack(pady=(0, 16))
+        self.make_button(
+            self.sound_tab,
+            "SESİ DENE",
+            lambda: self.play_sound(880, 90),
+        ).pack()
+        tk.Label(
+            self.gameplay_tab,
+            text="ZORLUK",
+            fg="#b7c9c8",
+            bg="#172a36",
+            font=("Arial", 9, "bold"),
+        ).pack(pady=(0, 10))
+        self.difficulty_var = tk.StringVar(value=self.difficulty)
+        difficulty_row = tk.Frame(self.gameplay_tab, bg="#172a36")
+        difficulty_row.pack()
+        for difficulty in DIFFICULTIES:
+            tk.Radiobutton(
+                difficulty_row,
+                text=difficulty,
+                value=difficulty,
+                variable=self.difficulty_var,
+                command=self.change_difficulty,
+                indicatoron=False,
+                width=9,
+                padx=6,
+                pady=9,
+                bg="#263d48",
+                fg="#eaf0e6",
+                selectcolor="#ffd166",
+                activebackground="#36535d",
+                activeforeground="#ffffff",
+                font=("Arial", 10, "bold"),
+            ).pack(side=tk.LEFT, padx=4)
+        self.difficulty_description = tk.Label(
+            self.gameplay_tab,
+            text="",
+            fg="#b7c9c8",
+            bg="#172a36",
+            font=("Arial", 10),
+        )
+        self.difficulty_description.pack(pady=(16, 0))
+        self.update_difficulty_description()
+        self.make_button(self.settings, "GERİ DÖN", self.close_settings, primary=True).pack()
 
-		self.canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, highlightthickness=0)
-		self.canvas.bind("<Button-1>", self.on_click)
-		self.canvas.bind("<Configure>", self.on_canvas_configure)
-		self.root.bind("<space>", self.on_flap_key)
-		self.root.bind("<Up>", self.on_flap_key)
-		self.root.bind("<p>", self.on_pause_key)
-		self.root.bind("<P>", self.on_pause_key)
-		self.root.bind("<F11>", self.toggle_fullscreen)
-		self.root.bind("<Escape>", self.on_escape)
-		self.reset_round()
-		self.draw()
-		self.menu.pack(expand=True)
+        self.canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, highlightthickness=0)
+        self.canvas.bind("<Button-1>", self.on_click)
+        self.canvas.bind("<Configure>", self.on_canvas_configure)
+        self.root.bind("<space>", self.on_flap_key)
+        self.root.bind("<Up>", self.on_flap_key)
+        self.root.bind("<p>", self.on_pause_key)
+        self.root.bind("<P>", self.on_pause_key)
+        self.root.bind("<F11>", self.toggle_fullscreen)
+        self.root.bind("<Escape>", self.on_escape)
+        self.reset_round()
+        self.draw()
+        self.menu.pack(expand=True)
 
-	@staticmethod
-	def make_button(parent, text, command, primary=False):
-		return tk.Button(
-			parent,
-			text=text,
-			command=command,
-			width=22,
-			padx=8,
-			pady=10 if primary else 8,
-			bg="#ffd166" if primary else "#263d48",
-			fg="#172a36" if primary else "#eaf0e6",
-			activebackground="#ffe08a" if primary else "#36535d",
-			activeforeground="#172a36" if primary else "#ffffff",
-			relief=tk.FLAT,
-			cursor="hand2",
-			font=("Arial", 11, "bold"),
-		)
+    @staticmethod
+    def make_button(parent, text, command, primary=False):
+        return tk.Button(
+            parent,
+            text=text,
+            command=command,
+            width=22,
+            padx=8,
+            pady=10 if primary else 8,
+            bg="#ffd166" if primary else "#263d48",
+            fg="#172a36" if primary else "#eaf0e6",
+            activebackground="#ffe08a" if primary else "#36535d",
+            activeforeground="#172a36" if primary else "#ffffff",
+            relief=tk.FLAT,
+            cursor="hand2",
+            font=("Arial", 11, "bold"),
+        )
 
-	def load_settings(self):
-		try:
-			with SETTINGS_FILE.open("r", encoding="utf-8") as settings_file:
-				settings = json.load(settings_file)
-			if not isinstance(settings, dict):
-				return
-			if settings.get("theme") in THEMES:
-				self.theme_name = settings["theme"]
-			self.show_sky_details = bool(settings.get("show_sky_details", True))
-			self.sound_enabled = bool(settings.get("sound_enabled", True))
-			if settings.get("difficulty") in DIFFICULTIES:
-				self.difficulty = settings["difficulty"]
-		except (OSError, ValueError, TypeError, json.JSONDecodeError):
-			pass
+    def load_settings(self):
+        try:
+            with SETTINGS_FILE.open("r", encoding="utf-8") as settings_file:
+                settings = json.load(settings_file)
+            if not isinstance(settings, dict):
+                return
+            if settings.get("theme") in THEMES:
+                self.theme_name = settings["theme"]
+            self.show_sky_details = bool(settings.get("show_sky_details", True))
+            self.sound_enabled = bool(settings.get("sound_enabled", True))
+            if settings.get("difficulty") in DIFFICULTIES:
+                self.difficulty = settings["difficulty"]
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            pass
 
-	def save_settings(self):
-		try:
-			with SETTINGS_FILE.open("w", encoding="utf-8") as settings_file:
-				json.dump(
-					{
-						"theme": self.theme_name,
-						"show_sky_details": self.show_sky_details,
-						"sound_enabled": self.sound_enabled,
-						"difficulty": self.difficulty,
-					},
-					settings_file,
-					ensure_ascii=False,
-					indent=2,
-				)
-		except OSError:
-			pass
+    def save_settings(self):
+        try:
+            with SETTINGS_FILE.open("w", encoding="utf-8") as settings_file:
+                json.dump(
+                    {
+                        "theme": self.theme_name,
+                        "show_sky_details": self.show_sky_details,
+                        "sound_enabled": self.sound_enabled,
+                        "difficulty": self.difficulty,
+                    },
+                    settings_file,
+                    ensure_ascii=False,
+                    indent=2,
+                )
+        except OSError:
+            pass
 
-	@staticmethod
-	def load_best_score():
-		try:
-			with RECORD_FILE.open("r", encoding="utf-8") as record_file:
-				record = json.load(record_file)
-			if not isinstance(record, dict):
-				return 0
-			return max(0, int(record.get("best_score", 0)))
-		except (OSError, ValueError, TypeError, json.JSONDecodeError):
-			return 0
+    @staticmethod
+    def load_best_score():
+        try:
+            with RECORD_FILE.open("r", encoding="utf-8") as record_file:
+                record = json.load(record_file)
+            if not isinstance(record, dict):
+                return 0
+            return max(0, int(record.get("best_score", 0)))
+        except (OSError, ValueError, TypeError, json.JSONDecodeError):
+            return 0
 
-	def save_best_score(self):
-		try:
-			with RECORD_FILE.open("w", encoding="utf-8") as record_file:
-				json.dump({"best_score": self.best_score}, record_file)
-		except OSError:
-			pass
+    def save_best_score(self):
+        try:
+            with RECORD_FILE.open("w", encoding="utf-8") as record_file:
+                json.dump({"best_score": self.best_score}, record_file)
+        except OSError:
+            pass
 
-	def toggle_sound(self):
-		self.sound_enabled = self.sound_var.get()
-		self.save_settings()
+    def toggle_sound(self):
+        self.sound_enabled = self.sound_var.get()
+        self.save_settings()
 
-	def change_difficulty(self):
-		self.difficulty = self.difficulty_var.get()
-		self.rules = DIFFICULTIES[self.difficulty]
-		self.update_difficulty_description()
-		self.save_settings()
+    def change_difficulty(self):
+        self.difficulty = self.difficulty_var.get()
+        self.rules = DIFFICULTIES[self.difficulty]
+        self.update_difficulty_description()
+        self.save_settings()
 
-	def update_difficulty_description(self):
-		descriptions = {
-			"Kolay": "Daha geniş boru aralığı ve daha yavaş borular.",
-			"Normal": "Dengeli uçuş ve boru hızı.",
-			"Zor": "Dar aralık ve daha hızlı borular.",
-		}
-		self.difficulty_description.config(text=descriptions[self.difficulty])
+    def update_difficulty_description(self):
+        descriptions = {
+            "Kolay": "Daha geniş boru aralığı ve daha yavaş borular.",
+            "Normal": "Dengeli uçuş ve boru hızı.",
+            "Zor": "Dar aralık ve daha hızlı borular.",
+        }
+        self.difficulty_description.config(text=descriptions[self.difficulty])
 
-	def play_sound(self, frequency, duration):
-		if not self.sound_enabled:
-			return
-		if winsound is not None:
-			try:
-				winsound.Beep(frequency, duration)
-			except RuntimeError:
-				pass
-		else:
-			self.root.bell()
+    def play_sound(self, frequency, duration):
+        if not self.sound_enabled:
+            return
+        if winsound is not None:
+            try:
+                winsound.Beep(frequency, duration)
+            except RuntimeError:
+                pass
+        else:
+            self.root.bell()
 
-	def change_theme(self):
-		self.theme_name = self.theme_var.get()
-		self.theme = THEMES[self.theme_name]
-		self.save_settings()
-		self.draw()
+    def change_theme(self):
+        self.theme_name = self.theme_var.get()
+        self.theme = THEMES[self.theme_name]
+        self.save_settings()
+        self.draw()
 
-	def toggle_sky_details(self):
-		self.show_sky_details = self.details_var.get()
-		self.save_settings()
-		self.draw()
+    def toggle_sky_details(self):
+        self.show_sky_details = self.details_var.get()
+        self.save_settings()
+        self.draw()
 
-	def open_settings(self):
-		self.menu.pack_forget()
-		self.settings.pack(expand=True)
+    def open_settings(self):
+        self.menu.pack_forget()
+        self.settings.pack(expand=True)
 
-	def close_settings(self):
-		self.settings.pack_forget()
-		self.menu.pack(expand=True)
+    def close_settings(self):
+        self.settings.pack_forget()
+        self.menu.pack(expand=True)
 
-	def show_game(self):
-		self.menu.pack_forget()
-		self.canvas.pack(fill=tk.BOTH, expand=True)
-		self.state = "ready"
-		self.reset_round()
-		self.draw()
+    def show_game(self):
+        self.menu.pack_forget()
+        self.canvas.pack(fill=tk.BOTH, expand=True)
+        self.state = "ready"
+        self.reset_round()
+        self.draw()
 
-	def toggle_fullscreen(self, _event=None):
-		if self.fullscreen:
-			self.root.attributes("-fullscreen", False)
-			self.root.resizable(*self.windowed_resizable)
-			if self.windowed_geometry:
-				self.root.geometry(self.windowed_geometry)
-			self.fullscreen = False
-		else:
-			self.windowed_geometry = self.root.geometry()
-			self.windowed_resizable = self.root.resizable()
-			self.fullscreen = True
-			self.root.resizable(True, True)
-			self.root.attributes("-fullscreen", True)
-		return "break"
+    def toggle_fullscreen(self, _event=None):
+        if self.fullscreen:
+            self.root.attributes("-fullscreen", False)
+            self.root.resizable(*self.windowed_resizable)
+            if self.windowed_geometry:
+                self.root.geometry(self.windowed_geometry)
+            self.fullscreen = False
+        else:
+            self.windowed_geometry = self.root.geometry()
+            self.windowed_resizable = self.root.resizable()
+            self.fullscreen = True
+            self.root.resizable(True, True)
+            self.root.attributes("-fullscreen", True)
+        return "break"
 
-	def on_canvas_configure(self, _event):
-		self.draw()
+    def on_canvas_configure(self, _event):
+        self.draw()
 
-	def reset_round(self):
-		self.score = 0
-		self.bird_y = HEIGHT * 0.42
-		self.velocity = 0
-		self.pipes = [
-			{"x": WIDTH + 55, "top": self.random_pipe_top(), "passed": False},
-			{"x": WIDTH + 55 + PIPE_SPACING, "top": self.random_pipe_top(), "passed": False},
-		]
+    def reset_round(self):
+        self.score = 0
+        self.bird_y = HEIGHT * 0.42
+        self.velocity = 0
+        self.pipes = [
+            {"x": WIDTH + 55, "top": self.random_pipe_top(), "passed": False},
+            {"x": WIDTH + 55 + PIPE_SPACING, "top": self.random_pipe_top(), "passed": False},
+        ]
 
-	def random_pipe_top(self):
-		return random.randint(120, GROUND_TOP - self.rules["gap"] - 24)
+    def random_pipe_top(self):
+        return random.randint(120, GROUND_TOP - self.rules["gap"] - 24)
 
-	def start_round(self):
-		self.reset_round()
-		self.state = "playing"
-		self.flap()
-		self.tick()
+    def start_round(self):
+        self.reset_round()
+        self.state = "playing"
+        self.flap()
+        self.tick()
 
-	def flap(self):
-		self.velocity = self.rules["flap"]
-		self.play_sound(880, 35)
+    def flap(self):
+        self.velocity = self.rules["flap"]
+        self.play_sound(880, 35)
 
-	def on_click(self, _event):
-		if self.state == "ready":
-			self.start_round()
-		elif self.state == "playing":
-			self.flap()
-		elif self.state == "paused":
-			self.resume_round()
-		elif self.state == "over":
-			self.start_round()
+    def on_click(self, _event):
+        if self.state == "ready":
+            self.start_round()
+        elif self.state == "playing":
+            self.flap()
+        elif self.state == "paused":
+            self.resume_round()
+        elif self.state == "over":
+            self.start_round()
 
-	def on_flap_key(self, _event):
-		if self.state == "ready":
-			self.start_round()
-		elif self.state == "playing":
-			self.flap()
-		elif self.state == "paused":
-			self.resume_round()
-		elif self.state == "over":
-			self.start_round()
+    def on_flap_key(self, _event):
+        if self.state == "ready":
+            self.start_round()
+        elif self.state == "playing":
+            self.flap()
+        elif self.state == "paused":
+            self.resume_round()
+        elif self.state == "over":
+            self.start_round()
 
-	def on_pause_key(self, _event):
-		if self.state == "playing":
-			self.state = "paused"
-			if self.after_id is not None:
-				self.root.after_cancel(self.after_id)
-				self.after_id = None
-			self.draw()
-		elif self.state == "paused":
-			self.resume_round()
+    def on_pause_key(self, _event):
+        if self.state == "playing":
+            self.state = "paused"
+            if self.after_id is not None:
+                self.root.after_cancel(self.after_id)
+                self.after_id = None
+            self.draw()
+        elif self.state == "paused":
+            self.resume_round()
 
-	def resume_round(self):
-		self.state = "playing"
-		self.draw()
-		self.after_id = self.root.after(20, self.tick)
+    def resume_round(self):
+        self.state = "playing"
+        self.draw()
+        self.after_id = self.root.after(20, self.tick)
 
-	def on_escape(self, _event):
-		if self.fullscreen:
-			self.toggle_fullscreen()
-			return "break"
-		if self.state in ("playing", "paused", "ready", "over"):
-			if self.after_id is not None:
-				self.root.after_cancel(self.after_id)
-				self.after_id = None
-			self.canvas.pack_forget()
-			self.state = "menu"
-			self.menu.pack(expand=True)
-		elif self.settings.winfo_ismapped():
-			self.close_settings()
+    def on_escape(self, _event):
+        if self.fullscreen:
+            self.toggle_fullscreen()
+            return "break"
+        if self.state in ("playing", "paused", "ready", "over"):
+            if self.after_id is not None:
+                self.root.after_cancel(self.after_id)
+                self.after_id = None
+            self.canvas.pack_forget()
+            self.state = "menu"
+            self.menu.pack(expand=True)
+        elif self.settings.winfo_ismapped():
+            self.close_settings()
 
-	def tick(self):
-		if self.state != "playing":
-			return
-		self.velocity += self.rules["gravity"]
-		self.bird_y += self.velocity
-		for pipe in self.pipes:
-			pipe["x"] -= self.rules["pipe_speed"]
-			if not pipe["passed"] and pipe["x"] + PIPE_WIDTH < BIRD_X:
-				pipe["passed"] = True
-				self.score += 1
-				self.play_sound(1120, 65)
-			if pipe["x"] + PIPE_WIDTH < 0:
-				pipe["x"] = max(item["x"] for item in self.pipes) + PIPE_SPACING
-				pipe["top"] = self.random_pipe_top()
-				pipe["passed"] = False
-		if self.has_collision():
-			self.state = "over"
-			if self.score > self.best_score:
-				self.best_score = self.score
-				self.save_best_score()
-				self.record_label.config(text=f"REKOR  {self.best_score}")
-			self.play_sound(330, 140)
-		self.draw()
-		if self.state == "playing":
-			self.after_id = self.root.after(20, self.tick)
-		else:
-			self.after_id = None
+    def tick(self):
+        if self.state != "playing":
+            return
+        self.velocity += self.rules["gravity"]
+        self.bird_y += self.velocity
+        for pipe in self.pipes:
+            pipe["x"] -= self.rules["pipe_speed"]
+            if not pipe["passed"] and pipe["x"] + PIPE_WIDTH < BIRD_X:
+                pipe["passed"] = True
+                self.score += 1
+                self.play_sound(1120, 65)
+            if pipe["x"] + PIPE_WIDTH < 0:
+                pipe["x"] = max(item["x"] for item in self.pipes) + PIPE_SPACING
+                pipe["top"] = self.random_pipe_top()
+                pipe["passed"] = False
+        if self.has_collision():
+            self.state = "over"
+            if self.score > self.best_score:
+                self.best_score = self.score
+                self.save_best_score()
+                self.record_label.config(text=f"REKOR  {self.best_score}")
+            self.play_sound(330, 140)
+        self.draw()
+        if self.state == "playing":
+            self.after_id = self.root.after(20, self.tick)
+        else:
+            self.after_id = None
 
-	def has_collision(self):
-		if self.bird_y - BIRD_RADIUS < 0 or self.bird_y + BIRD_RADIUS >= GROUND_TOP:
-			return True
-		for pipe in self.pipes:
-			overlaps_x = BIRD_X + BIRD_RADIUS > pipe["x"] and BIRD_X - BIRD_RADIUS < pipe["x"] + PIPE_WIDTH
-			outside_gap = (
-				self.bird_y - BIRD_RADIUS < pipe["top"]
-				or self.bird_y + BIRD_RADIUS > pipe["top"] + self.rules["gap"]
-			)
-			if overlaps_x and outside_gap:
-				return True
-		return False
+    def has_collision(self):
+        if self.bird_y - BIRD_RADIUS < 0 or self.bird_y + BIRD_RADIUS >= GROUND_TOP:
+            return True
+        for pipe in self.pipes:
+            overlaps_x = BIRD_X + BIRD_RADIUS > pipe["x"] and BIRD_X - BIRD_RADIUS < pipe["x"] + PIPE_WIDTH
+            outside_gap = (
+                self.bird_y - BIRD_RADIUS < pipe["top"]
+                or self.bird_y + BIRD_RADIUS > pipe["top"] + self.rules["gap"]
+            )
+            if overlaps_x and outside_gap:
+                return True
+        return False
 
-	def draw_pipe(self, pipe):
-		x = pipe["x"]
-		top = pipe["top"]
-		bottom = top + self.rules["gap"]
-		colors = self.theme
-		self.canvas.create_rectangle(x, 0, x + PIPE_WIDTH, top, fill=colors["pipe"], outline="")
-		self.canvas.create_rectangle(x - 5, top - 18, x + PIPE_WIDTH + 5, top, fill=colors["pipe_dark"], outline="")
-		self.canvas.create_rectangle(x, bottom, x + PIPE_WIDTH, GROUND_TOP, fill=colors["pipe"], outline="")
-		self.canvas.create_rectangle(x - 5, bottom, x + PIPE_WIDTH + 5, bottom + 18, fill=colors["pipe_dark"], outline="")
-		self.canvas.create_line(x + 9, 0, x + 9, top - 20, fill=colors["horizon"], width=3)
-		self.canvas.create_line(x + 9, bottom + 20, x + 9, GROUND_TOP, fill=colors["horizon"], width=3)
+    def draw_pipe(self, pipe):
+        x = pipe["x"]
+        top = pipe["top"]
+        bottom = top + self.rules["gap"]
+        colors = self.theme
+        self.canvas.create_rectangle(x, 0, x + PIPE_WIDTH, top, fill=colors["pipe"], outline="")
+        self.canvas.create_rectangle(x - 5, top - 18, x + PIPE_WIDTH + 5, top, fill=colors["pipe_dark"], outline="")
+        self.canvas.create_rectangle(x, bottom, x + PIPE_WIDTH, GROUND_TOP, fill=colors["pipe"], outline="")
+        self.canvas.create_rectangle(x - 5, bottom, x + PIPE_WIDTH + 5, bottom + 18, fill=colors["pipe_dark"], outline="")
+        self.canvas.create_line(x + 9, 0, x + 9, top - 20, fill=colors["horizon"], width=3)
+        self.canvas.create_line(x + 9, bottom + 20, x + 9, GROUND_TOP, fill=colors["horizon"], width=3)
 
-	def draw_bird(self):
-		x = BIRD_X
-		y = self.bird_y
-		colors = self.theme
-		self.canvas.create_oval(
-			x - BIRD_RADIUS,
-			y - BIRD_RADIUS,
-			x + BIRD_RADIUS,
-			y + BIRD_RADIUS,
-			fill=colors["bird"],
-			outline=colors["text"],
-			width=2,
-		)
-		self.canvas.create_oval(x - 10, y + 1, x + 3, y + 9, fill=colors["bird_wing"], outline="")
-		self.canvas.create_oval(x + 4, y - 8, x + 10, y - 2, fill="#ffffff", outline="")
-		self.canvas.create_oval(x + 7, y - 7, x + 9, y - 4, fill="#183b4a", outline="")
-		self.canvas.create_polygon(
-			x + 12, y + 1, x + 24, y + 5, x + 12, y + 8,
-			fill="#f28b54", outline=colors["text"],
-		)
+    def draw_bird(self):
+        x = BIRD_X
+        y = self.bird_y
+        colors = self.theme
+        self.canvas.create_oval(
+            x - BIRD_RADIUS,
+            y - BIRD_RADIUS,
+            x + BIRD_RADIUS,
+            y + BIRD_RADIUS,
+            fill=colors["bird"],
+            outline=colors["text"],
+            width=2,
+        )
+        self.canvas.create_oval(x - 10, y + 1, x + 3, y + 9, fill=colors["bird_wing"], outline="")
+        self.canvas.create_oval(x + 4, y - 8, x + 10, y - 2, fill="#ffffff", outline="")
+        self.canvas.create_oval(x + 7, y - 7, x + 9, y - 4, fill="#183b4a", outline="")
+        self.canvas.create_polygon(
+            x + 12, y + 1, x + 24, y + 5, x + 12, y + 8,
+            fill="#f28b54", outline=colors["text"],
+        )
 
-	def draw(self):
-		colors = self.theme
-		canvas_width = max(self.canvas.winfo_width(), self.canvas.winfo_reqwidth())
-		canvas_height = max(self.canvas.winfo_height(), self.canvas.winfo_reqheight())
-		self.render_scale = min(canvas_width / WIDTH, canvas_height / HEIGHT)
-		self.render_offset_x = (canvas_width - WIDTH * self.render_scale) / 2
-		self.render_offset_y = (canvas_height - HEIGHT * self.render_scale) / 2
-		self.canvas.delete("all")
-		self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill=colors["sky"], outline="")
-		self.canvas.create_rectangle(0, GROUND_TOP - 110, WIDTH, GROUND_TOP, fill=colors["horizon"], outline="")
-		if self.show_sky_details:
-			self.canvas.create_oval(370, 45, 430, 105, fill=colors["sun"], outline="")
-			for cloud_x, cloud_y in ((65, 120), (285, 195), (390, 270)):
-				self.canvas.create_oval(cloud_x, cloud_y, cloud_x + 38, cloud_y + 20, fill=colors["decoration"], outline="")
-				self.canvas.create_oval(cloud_x + 18, cloud_y - 9, cloud_x + 52, cloud_y + 20, fill=colors["decoration"], outline="")
-			if self.theme_name == "Gece":
-				for star_x, star_y in ((58, 55), (185, 92), (300, 48), (440, 160), (230, 145)):
-					self.canvas.create_oval(star_x, star_y, star_x + 3, star_y + 3, fill=colors["decoration"], outline="")
-		for pipe in self.pipes:
-			self.draw_pipe(pipe)
-		self.draw_bird()
-		self.canvas.create_rectangle(0, GROUND_TOP, WIDTH, HEIGHT, fill=colors["ground"], outline="")
-		self.canvas.create_rectangle(0, GROUND_TOP, WIDTH, GROUND_TOP + 9, fill=colors["ground_line"], outline="")
-		for stripe_x in range(-20, WIDTH + 20, 36):
-			self.canvas.create_line(stripe_x, GROUND_TOP + 17, stripe_x - 18, HEIGHT, fill=colors["ground_line"], width=2)
-		if self.state in ("ready", "playing"):
-			self.canvas.create_text(WIDTH / 2, 48, text=str(self.score), fill="#ffffff", font=self.canvas_font(30, "bold"), tags="score")
-		if self.state == "ready":
-			self.canvas.create_text(WIDTH / 2, 490, text="TIKLA VEYA BOŞLUK TUŞUNA BAS", fill=colors["text"], font=self.canvas_font(11, "bold"))
-		elif self.state == "paused":
-			self.canvas.create_rectangle(55, 230, WIDTH - 55, 390, fill="#172a36", outline=colors["sun"], width=2)
-			self.canvas.create_text(WIDTH / 2, 275, text="DURAKLATILDI", fill=colors["sun"], font=self.canvas_font(23, "bold"))
-			self.canvas.create_text(WIDTH / 2, 320, text=f"PUAN  {self.score}", fill="#f3f5e9", font=self.canvas_font(16, "bold"))
-			self.canvas.create_text(WIDTH / 2, 360, text="Devam: P, tıkla veya boşluk  |  Menü: Esc", fill="#d6e1d9", font=self.canvas_font(9))
-		elif self.state == "over":
-			self.canvas.create_rectangle(55, 230, WIDTH - 55, 390, fill="#172a36", outline=colors["sun"], width=2)
-			self.canvas.create_text(WIDTH / 2, 270, text="OYUN BİTTİ", fill=colors["sun"], font=self.canvas_font(24, "bold"))
-			self.canvas.create_text(WIDTH / 2, 315, text=f"PUAN  {self.score}", fill="#f3f5e9", font=self.canvas_font(16, "bold"))
-			self.canvas.create_text(WIDTH / 2, 345, text=f"REKOR  {self.best_score}", fill=colors["sun"], font=self.canvas_font(12, "bold"))
-			self.canvas.create_text(WIDTH / 2, 370, text="Yeniden başlamak için tıkla veya boşluk", fill="#d6e1d9", font=self.canvas_font(10))
-		self.canvas.scale("all", 0, 0, self.render_scale, self.render_scale)
-		self.canvas.move("all", self.render_offset_x, self.render_offset_y)
+    def draw(self):
+        colors = self.theme
+        canvas_width = max(self.canvas.winfo_width(), self.canvas.winfo_reqwidth())
+        canvas_height = max(self.canvas.winfo_height(), self.canvas.winfo_reqheight())
+        self.render_scale = min(canvas_width / WIDTH, canvas_height / HEIGHT)
+        self.render_offset_x = (canvas_width - WIDTH * self.render_scale) / 2
+        self.render_offset_y = (canvas_height - HEIGHT * self.render_scale) / 2
+        self.canvas.delete("all")
+        self.canvas.create_rectangle(0, 0, WIDTH, HEIGHT, fill=colors["sky"], outline="")
+        self.canvas.create_rectangle(0, GROUND_TOP - 110, WIDTH, GROUND_TOP, fill=colors["horizon"], outline="")
+        if self.show_sky_details:
+            self.canvas.create_oval(370, 45, 430, 105, fill=colors["sun"], outline="")
+            for cloud_x, cloud_y in ((65, 120), (285, 195), (390, 270)):
+                self.canvas.create_oval(cloud_x, cloud_y, cloud_x + 38, cloud_y + 20, fill=colors["decoration"], outline="")
+                self.canvas.create_oval(cloud_x + 18, cloud_y - 9, cloud_x + 52, cloud_y + 20, fill=colors["decoration"], outline="")
+            if self.theme_name == "Gece":
+                for star_x, star_y in ((58, 55), (185, 92), (300, 48), (440, 160), (230, 145)):
+                    self.canvas.create_oval(star_x, star_y, star_x + 3, star_y + 3, fill=colors["decoration"], outline="")
+        for pipe in self.pipes:
+            self.draw_pipe(pipe)
+        self.draw_bird()
+        self.canvas.create_rectangle(0, GROUND_TOP, WIDTH, HEIGHT, fill=colors["ground"], outline="")
+        self.canvas.create_rectangle(0, GROUND_TOP, WIDTH, GROUND_TOP + 9, fill=colors["ground_line"], outline="")
+        for stripe_x in range(-20, WIDTH + 20, 36):
+            self.canvas.create_line(stripe_x, GROUND_TOP + 17, stripe_x - 18, HEIGHT, fill=colors["ground_line"], width=2)
+        if self.state in ("ready", "playing"):
+            self.canvas.create_text(WIDTH / 2, 48, text=str(self.score), fill="#ffffff", font=self.canvas_font(30, "bold"), tags="score")
+        if self.state == "ready":
+            self.canvas.create_text(WIDTH / 2, 490, text="TIKLA VEYA BOŞLUK TUŞUNA BAS", fill=colors["text"], font=self.canvas_font(11, "bold"))
+        elif self.state == "paused":
+            self.canvas.create_rectangle(55, 230, WIDTH - 55, 390, fill="#172a36", outline=colors["sun"], width=2)
+            self.canvas.create_text(WIDTH / 2, 275, text="DURAKLATILDI", fill=colors["sun"], font=self.canvas_font(23, "bold"))
+            self.canvas.create_text(WIDTH / 2, 320, text=f"PUAN  {self.score}", fill="#f3f5e9", font=self.canvas_font(16, "bold"))
+            self.canvas.create_text(WIDTH / 2, 360, text="Devam: P, tıkla veya boşluk  |  Menü: Esc", fill="#d6e1d9", font=self.canvas_font(9))
+        elif self.state == "over":
+            self.canvas.create_rectangle(55, 230, WIDTH - 55, 390, fill="#172a36", outline=colors["sun"], width=2)
+            self.canvas.create_text(WIDTH / 2, 270, text="OYUN BİTTİ", fill=colors["sun"], font=self.canvas_font(24, "bold"))
+            self.canvas.create_text(WIDTH / 2, 315, text=f"PUAN  {self.score}", fill="#f3f5e9", font=self.canvas_font(16, "bold"))
+            self.canvas.create_text(WIDTH / 2, 345, text=f"REKOR  {self.best_score}", fill=colors["sun"], font=self.canvas_font(12, "bold"))
+            self.canvas.create_text(WIDTH / 2, 370, text="Yeniden başlamak için tıkla veya boşluk", fill="#d6e1d9", font=self.canvas_font(10))
+        self.canvas.scale("all", 0, 0, self.render_scale, self.render_scale)
+        self.canvas.move("all", self.render_offset_x, self.render_offset_y)
 
-	def canvas_font(self, size, weight="normal"):
-		return ("Arial", max(8, round(size * self.render_scale)), weight)
+    def canvas_font(self, size, weight="normal"):
+        return ("Arial", max(8, round(size * self.render_scale)), weight)
 
 
 def main():
-	root = tk.Tk()
-	FlappyBird(root)
-	root.mainloop()
+    root = tk.Tk()
+    FlappyBird(root)
+    root.mainloop()
 
 
 if __name__ == "__main__":
-	main()
+    main()
+    
